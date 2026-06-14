@@ -7,7 +7,6 @@ const histories = {
     quiz: [], syllabus: [], project: []
 };
 
-// Common compounds for the compound reactor picker
 const COMMON_COMPOUNDS = [
     'H₂O (Water)', 'HCl (Hydrochloric acid)', 'H₂SO₄ (Sulfuric acid)',
     'HNO₃ (Nitric acid)', 'NaOH (Sodium hydroxide)', 'KOH (Potassium hydroxide)',
@@ -27,14 +26,12 @@ function renderMarkdown(text) {
     if (typeof marked !== 'undefined') {
         return marked.parse ? marked.parse(text) : marked(text);
     }
-    // Fallback — basic formatting without marked.js
     return text
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/^## (.+)$/gm, '<h5>$1</h5>')
         .replace(/^### (.+)$/gm, '<h6>$1</h6>')
         .replace(/^- (.+)$/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
         .replace(/\n/g, '<br>');
 }
 
@@ -50,8 +47,6 @@ function assignapi() {
     console.log('API key set for', document.getElementById('ai-picker').value);
 }
 
-// ─── COMPOUND PICKER SETUP ────────────────────────────────
-// Called on page load to populate the compound datalists
 function setupCompoundPickers() {
     ['compound1-list', 'compound2-list'].forEach(id => {
         const dl = document.getElementById(id);
@@ -68,21 +63,16 @@ window.onload = setupCompoundPickers;
 
 // ═══════════════════════════════════════════════════════════
 // MATH HELPER
-// Socratic tutoring — never gives the answer directly.
-// Rich formatted output like Microsoft Math Solver.
 // ═══════════════════════════════════════════════════════════
 async function solvemath() {
     if (!apikey) { document.getElementById('math-output').innerHTML = 'Enter your API key first.'; return; }
-
     const input = document.getElementById('problemmath').value.trim();
     if (!input) return;
-
     const output = document.getElementById('math-output');
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${input}</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking">🤔 <em>Thinking...</em></div>`;
     document.getElementById('problemmath').value = '';
     output.scrollTop = output.scrollHeight;
-
     try {
         const result = await askAI('math',
             `You are a patient math tutor. Format ALL responses like this:
@@ -98,13 +88,12 @@ async function solvemath() {
 
 NEVER give the full answer. Be warm and encouraging.
 ${getDBContext()}`, input);
-
         document.getElementById('thinking').remove();
         output.innerHTML += `<div class="msg-ai">🤖 <strong>AI Tutor:</strong><div class="ai-content">${renderMarkdown(result)}</div></div>`;
         output.scrollTop = output.scrollHeight;
         saveToDB('Math Helper', input, result);
     } catch (e) {
-        document.getElementById('thinking').remove();
+        document.getElementById('thinking')?.remove();
         output.innerHTML += `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -113,20 +102,16 @@ function resetMath() { clearChat('math'); document.getElementById('math-output')
 
 // ═══════════════════════════════════════════════════════════
 // EXPLAIN THIS
-// Rich structured explanations with analogies and examples.
 // ═══════════════════════════════════════════════════════════
 async function solveexplain() {
     if (!apikey) { document.getElementById('explain-output').innerHTML = 'Enter your API key first.'; return; }
-
     const input = document.getElementById('explain').value.trim();
     if (!input) return;
-
     const level = document.getElementById('explain-level').value;
     const output = document.getElementById('explain-output');
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${input}</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking-explain">🤔 <em>Thinking...</em></div>`;
     document.getElementById('explain').value = '';
-
     try {
         const result = await askAI('explain',
             `You are an expert STEM teacher explaining to a ${level} student.
@@ -148,13 +133,12 @@ Always format your response like this:
 
 If the student asks a follow-up, build on your previous explanation.
 ${getDBContext()}`, input);
-
         document.getElementById('thinking-explain').remove();
         output.innerHTML += `<div class="msg-ai">🤖 <strong>AI Teacher:</strong><div class="ai-content">${renderMarkdown(result)}</div></div>`;
         output.scrollTop = output.scrollHeight;
         saveToDB('Explain This', input, result);
     } catch (e) {
-        document.getElementById('thinking-explain').remove();
+        document.getElementById('thinking-explain')?.remove();
         output.innerHTML += `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -166,16 +150,13 @@ function resetExplain() { clearChat('explain'); document.getElementById('explain
 // ═══════════════════════════════════════════════════════════
 async function solveessay() {
     if (!apikey) { document.getElementById('essay-output').innerHTML = 'Enter your API key first.'; return; }
-
     const input = document.getElementById('essay').value.trim();
     if (!input) return;
-
     const subject = document.getElementById('essay-subject').value;
     const output = document.getElementById('essay-output');
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${input.substring(0, 100)}...</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking-essay">📝 <em>Reading your essay...</em></div>`;
     document.getElementById('essay').value = '';
-
     try {
         const result = await askAI('essay',
             `You are a ${subject} teacher. Format feedback like this:
@@ -196,18 +177,17 @@ async function solveessay() {
 
 ## 💡 Top 3 Suggestions
 1. most important improvement
-2. second improvement  
+2. second improvement
 3. third improvement
 
 Focus on THINKING QUALITY not grammar.
 ${getDBContext()}`, input);
-
         document.getElementById('thinking-essay').remove();
         output.innerHTML += `<div class="msg-ai">🤖 <strong>AI Teacher:</strong><div class="ai-content">${renderMarkdown(result)}</div></div>`;
         output.scrollTop = output.scrollHeight;
         saveToDB('Essay Feedback', input, result);
     } catch (e) {
-        document.getElementById('thinking-essay').remove();
+        document.getElementById('thinking-essay')?.remove();
         output.innerHTML += `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -233,17 +213,13 @@ function drawImageOnCanvas(imageDataUrl) {
 async function solvediagram() {
     const visionKey = document.getElementById('vision-key').value.trim();
     if (!visionKey) { document.getElementById('diagram-output').innerHTML = 'Enter your OpenRouter API key first.'; return; }
-
     const file = document.getElementById('diagram-file').files[0];
     const question = document.getElementById('diagram-question').value.trim();
     const output = document.getElementById('diagram-output');
-
     if (!file && !question) return;
-
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${question || '[Uploaded a diagram]'}</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking-diagram">👀 <em>Analysing image...</em></div>`;
     document.getElementById('diagram-question').value = '';
-
     try {
         let base64, mimeType;
         if (file) {
@@ -257,7 +233,6 @@ async function solvediagram() {
             drawImageOnCanvas(`data:${mimeType};base64,${base64}`);
             document.getElementById('diagram-file').value = '';
         }
-
         const promptText = file
             ? `Look at this diagram carefully. Format your response like this:
 
@@ -273,8 +248,7 @@ async function solvediagram() {
 ## ⚡ Key Takeaway
 (the most important thing to understand from this diagram)
 
-${question ? `Also address: ${question}` : ''}`
-            : question;
+${question ? `Also address: ${question}` : ''}` : question;
 
         const newMessage = {
             role: 'user',
@@ -283,30 +257,22 @@ ${question ? `Also address: ${question}` : ''}`
                 { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } }
             ] : promptText
         };
-
         histories['diagram'].push(newMessage);
-
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${visionKey}` },
-            body: JSON.stringify({
-                model: 'meta-llama/llama-3.2-11b-vision-instruct',
-                messages: histories['diagram']
-            })
+            body: JSON.stringify({ model: 'meta-llama/llama-3.2-11b-vision-instruct', messages: histories['diagram'] })
         });
-
         const data = await response.json();
         if (!response.ok || !data.choices) throw new Error(data.error?.message || 'Vision request failed.');
-
         const result = data.choices[0].message.content;
         histories['diagram'].push({ role: 'assistant', content: result });
-
         document.getElementById('thinking-diagram').remove();
         output.innerHTML += `<div class="msg-ai">🤖 <strong>AI Teacher:</strong><div class="ai-content">${renderMarkdown(result)}</div></div>`;
         output.scrollTop = output.scrollHeight;
         saveToDB('Diagram Labeller', question || '[Diagram upload]', result);
     } catch (e) {
-        document.getElementById('thinking-diagram').remove();
+        document.getElementById('thinking-diagram')?.remove();
         output.innerHTML += `<div class="msg-error">⚠️ ${e.message}</div>`;
     }
 }
@@ -321,22 +287,17 @@ function resetDiagram() {
 
 // ═══════════════════════════════════════════════════════════
 // COMPOUND REACTOR
-// Searchable compound picker + visual reaction display.
 // ═══════════════════════════════════════════════════════════
 async function solvecompound() {
     if (!apikey) { document.getElementById('compound-output').innerHTML = 'Enter your API key first.'; return; }
-
     const c1 = document.getElementById('compound1').value.trim();
     const c2 = document.getElementById('compound2').value.trim();
     const temp = document.getElementById('compound-temp').value;
     const catalyst = document.getElementById('compound-catalyst').value;
     const output = document.getElementById('compound-output');
-
     if (!c1 || !c2) { output.innerHTML = '<div class="msg-error">Enter both compounds first.</div>'; return; }
-
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${c1} + ${c2} (${temp}, catalyst: ${catalyst})</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking-compound">⚗️ <em>Simulating reaction...</em></div>`;
-
     try {
         const result = await askAI('compound',
             `You are a chemistry simulator. Format your response like this:
@@ -360,36 +321,29 @@ async function solvecompound() {
 Be scientifically accurate.`,
             `Compound 1: ${c1}\nCompound 2: ${c2}\nTemperature: ${temp}\nCatalyst: ${catalyst}`
         );
-
         document.getElementById('thinking-compound').remove();
         output.innerHTML += `<div class="msg-ai">⚗️ <strong>Chemistry AI:</strong><div class="ai-content">${renderMarkdown(result)}</div></div>`;
         output.scrollTop = output.scrollHeight;
         saveToDB('Compound Reactor', `${c1} + ${c2}`, result);
     } catch (e) {
-        document.getElementById('thinking-compound').remove();
+        document.getElementById('thinking-compound')?.remove();
         output.innerHTML += `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
 
-function resetCompound() {
-    clearChat('compound');
-    document.getElementById('compound-output').innerHTML = '';
-}
+function resetCompound() { clearChat('compound'); document.getElementById('compound-output').innerHTML = ''; }
 
 // ═══════════════════════════════════════════════════════════
 // EQUATION BALANCER
 // ═══════════════════════════════════════════════════════════
 async function solvebalancer() {
     if (!apikey) { document.getElementById('balancer-output').innerHTML = 'Enter your API key first.'; return; }
-
     const input = document.getElementById('equation-input').value.trim();
     if (!input) return;
-
     const output = document.getElementById('balancer-output');
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${input}</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking-balancer">⚗️ <em>Balancing...</em></div>`;
     document.getElementById('equation-input').value = '';
-
     try {
         const result = await askAI('balancer',
             `You are a chemistry teacher. Format your response like this:
@@ -409,13 +363,12 @@ Step 3: (continue until balanced)
 (explain the underlying chemistry principle)`,
             `Balance this equation: ${input}`
         );
-
         document.getElementById('thinking-balancer').remove();
         output.innerHTML += `<div class="msg-ai">⚗️ <strong>Chemistry AI:</strong><div class="ai-content">${renderMarkdown(result)}</div></div>`;
         output.scrollTop = output.scrollHeight;
         saveToDB('Equation Balancer', input, result);
     } catch (e) {
-        document.getElementById('thinking-balancer').remove();
+        document.getElementById('thinking-balancer')?.remove();
         output.innerHTML += `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -427,14 +380,11 @@ function resetBalancer() { clearChat('balancer'); document.getElementById('balan
 // ═══════════════════════════════════════════════════════════
 async function solvegraph() {
     if (!apikey) { document.getElementById('graph-output').innerHTML = 'Enter your API key first.'; return; }
-
     const input = document.getElementById('graph-input').value.trim();
     if (!input) return;
-
     const output = document.getElementById('graph-output');
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${input}</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking-graph">📈 <em>Plotting...</em></div>`;
-
     try {
         const result = await askAI('graph',
             `You are a math teacher and graphing assistant. Do TWO things:
@@ -459,7 +409,6 @@ async function solvegraph() {
 (real-world meaning or mathematical significance)`, input);
 
         document.getElementById('thinking-graph').remove();
-
         const exprMatch = result.match(/EXPRESSION:\s*(.+)/);
         if (exprMatch && typeof Plotly !== 'undefined') {
             const expr = exprMatch[1].trim();
@@ -483,7 +432,6 @@ async function solvegraph() {
                 paper_bgcolor: 'white', plot_bgcolor: 'white'
             }, { responsive: true });
         }
-
         const explanation = result.replace(/EXPRESSION:.+\n?/, '').trim();
         output.innerHTML += `<div class="msg-ai">📈 <strong>Math AI:</strong><div class="ai-content">${renderMarkdown(explanation)}</div></div>`;
         output.scrollTop = output.scrollHeight;
@@ -501,14 +449,11 @@ function resetGraph() { clearChat('graph'); document.getElementById('graph-outpu
 // ═══════════════════════════════════════════════════════════
 async function solvenotes() {
     if (!apikey) { document.getElementById('notes-output').innerHTML = 'Enter your API key first.'; return; }
-
     const input = document.getElementById('notes-input').value.trim();
     const format = document.getElementById('notes-format').value;
     if (!input) return;
-
     const output = document.getElementById('notes-output');
     output.innerHTML = `<div class="msg-thinking" id="thinking-notes">📋 <em>Structuring your notes...</em></div>`;
-
     try {
         const result = await askAI('notes',
             `You are an expert note organizer. Reorganize the student's notes into 
@@ -522,7 +467,7 @@ async function solvenotes() {
         output.innerHTML = `<div class="ai-content">${renderMarkdown(result)}</div>`;
         saveToDB('Note Structurizer', input.substring(0, 100), result);
     } catch (e) {
-        document.getElementById('thinking-notes').remove();
+        document.getElementById('thinking-notes')?.remove();
         output.innerHTML = `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -570,7 +515,6 @@ async function solveaudio() {
     const format = document.getElementById('audio-format').value;
     const output = document.getElementById('audio-output');
     output.innerHTML = `<div class="msg-thinking" id="thinking-audio">📝 <em>Converting to notes...</em></div>`;
-
     try {
         const result = await askAI('audio',
             `You are an expert note taker. Convert this spoken transcript into 
@@ -583,7 +527,7 @@ async function solveaudio() {
         output.innerHTML = `<div class="ai-content">${renderMarkdown(result)}</div>`;
         saveToDB('Audio to Notes', text.substring(0, 100), result);
     } catch (e) {
-        document.getElementById('thinking-audio').remove();
+        document.getElementById('thinking-audio')?.remove();
         output.innerHTML = `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -604,7 +548,6 @@ async function solvesimplifier() {
     if (!input) return;
     const output = document.getElementById('simplifier-output');
     output.innerHTML = `<div class="msg-thinking" id="thinking-simplifier">🤔 <em>Simplifying...</em></div>`;
-
     try {
         const result = await askAI('simplifier',
             `You are an expert at making problems easy to understand.
@@ -616,29 +559,32 @@ Format your response like this:
 ## 📥 What You're Given
 - piece of information 1
 - piece of information 2
-(list every given value or fact)
 
 ## 🎯 What You Need to Find
 - what the question is actually asking for
 
 ## 💡 Where to Start
 (suggest the first step or approach, without solving it)`,
-            // NO getDBContext() here — we don't want chemistry polluting this
+            // NO getDBContext() — prevents cross-tool pollution
             input
         );
         document.getElementById('thinking-simplifier').remove();
         output.innerHTML = `<div class="ai-content">${renderMarkdown(result)}</div>`;
         saveToDB('Problem Simplifier', input, result);
     } catch (e) {
-        document.getElementById('thinking-simplifier').remove();
+        document.getElementById('thinking-simplifier')?.remove();
         output.innerHTML = `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
 
 // ═══════════════════════════════════════════════════════════
-// QUIZ GENERATOR
+// QUIZ GENERATOR — FIXED
+// The core fix: store the full option text as the answer,
+// compare using index, and use a dedicated answer-checking
+// div so we never lose track of state.
 // ═══════════════════════════════════════════════════════════
 let quizQuestions = [], quizIndex = 0, quizScore = 0;
+let quizAnswered = false; // tracks if current question is answered
 
 async function solvequiz() {
     if (!apikey) { document.getElementById('quiz-output').innerHTML = 'Enter your API key first.'; return; }
@@ -647,73 +593,176 @@ async function solvequiz() {
     const difficulty = document.getElementById('quiz-difficulty').value;
     const count = document.getElementById('quiz-count').value;
     if (!input) return;
+
     const output = document.getElementById('quiz-output');
     output.innerHTML = `<div class="msg-thinking">❓ <em>Generating ${count} questions...</em></div>`;
 
     try {
         const result = await askAI('quiz',
             `You are a quiz generator. Generate exactly ${count} ${type} questions 
-             at ${difficulty} difficulty level. 
-             Respond with ONLY a valid JSON array, no markdown, no code fences, nothing else:
-             For MCQ: [{"q":"question","options":["A","B","C","D"],"answer":"A","explanation":"why"}]
-             For True/False: [{"q":"statement","answer":"True","explanation":"why"}]
-             For Short answer: [{"q":"question","answer":"answer","explanation":"why"}]`,
+             at ${difficulty} difficulty level based on the content provided.
+             
+             IMPORTANT: Respond with ONLY a valid JSON array. No markdown, no code fences, 
+             no explanation — just the raw JSON array.
+             
+             For MCQ use this exact format:
+             [{"q":"question text","options":["option A text","option B text","option C text","option D text"],"answerIndex":0,"explanation":"why this is correct"}]
+             
+             answerIndex is the 0-based index of the correct option in the options array.
+             So if the correct answer is the first option, answerIndex is 0.
+             If the correct answer is the second option, answerIndex is 1. Etc.
+             
+             For True/False:
+             [{"q":"statement","answer":"True","explanation":"why"}]
+             
+             For Short answer:
+             [{"q":"question","answer":"correct answer","explanation":"why"}]`,
             input
         );
+
+        // Strip any accidental markdown fences
         const cleaned = result.replace(/```json|```/g, '').trim();
         quizQuestions = JSON.parse(cleaned);
         quizIndex = 0;
         quizScore = 0;
+        quizAnswered = false;
         output.innerHTML = '';
-        showQuizQuestion(output);
+        showQuizQuestion();
         saveToDB('Quiz Generator', input.substring(0, 100), `Generated ${quizQuestions.length} questions`);
+
     } catch (e) {
-        output.innerHTML = `<div class="msg-error">⚠️ Failed to generate quiz. Try again or use a different AI provider.</div>`;
+        console.error('Quiz parse error:', e, result);
+        output.innerHTML = `<div class="msg-error">⚠️ Failed to generate quiz. Try a different AI provider or simplify your input.</div>`;
     }
 }
 
-function showQuizQuestion(output) {
+function showQuizQuestion() {
+    const output = document.getElementById('quiz-output');
+    quizAnswered = false;
+
+    // All done — show score
     if (quizIndex >= quizQuestions.length) {
         const pct = Math.round((quizScore / quizQuestions.length) * 100);
         output.innerHTML = `
             <div class="ai-content">
-            <h5>🎉 Quiz Complete!</h5>
-            <p><strong>Score: ${quizScore} / ${quizQuestions.length} (${pct}%)</strong></p>
-            <p>${pct === 100 ? '🌟 Perfect score!' : pct >= 70 ? '👏 Great job!' : '💪 Keep practising!'}</p>
+                <h5>🎉 Quiz Complete!</h5>
+                <p><strong>Score: ${quizScore} / ${quizQuestions.length} (${pct}%)</strong></p>
+                <p style="font-size:1.5rem">${pct === 100 ? '🌟 Perfect score!' : pct >= 70 ? '👏 Great job!' : '💪 Keep practising!'}</p>
             </div>`;
         return;
     }
+
     const q = quizQuestions[quizIndex];
-    let html = `<div class="ai-content">
-        <p><strong>Question ${quizIndex + 1} of ${quizQuestions.length}:</strong></p>
-        <p>${q.q}</p>`;
-    if (q.options) {
-        html += q.options.map(opt =>
-            `<button class="btn btn-outline-secondary btn-sm m-1 quiz-opt" onclick="checkAnswer('${opt.replace(/'/g, "\\'")}')">${opt}</button>`
-        ).join('');
+    const isMCQ = q.options && Array.isArray(q.options);
+    const isTF = q.answer === 'True' || q.answer === 'False';
+
+    let html = `
+        <div class="ai-content" id="quiz-question-block">
+            <p class="text-muted small mb-1">Question ${quizIndex + 1} of ${quizQuestions.length} 
+                &nbsp;|&nbsp; Score: ${quizScore}</p>
+            <p><strong>${q.q}</strong></p>`;
+
+    if (isMCQ) {
+        // MCQ — render each option as a button
+        // Store the answerIndex on the question itself
+        html += `<div id="quiz-options">`;
+        q.options.forEach((opt, i) => {
+            html += `<button class="btn btn-outline-secondary btn-sm d-block mb-2 w-100 text-left quiz-opt"
+                        id="quiz-opt-${i}"
+                        onclick="checkMCQ(${i})"
+                        style="white-space:normal;">${opt}</button>`;
+        });
+        html += `</div>`;
     } else {
-        html += `<input type="text" class="form-control mb-2" id="quiz-answer" placeholder="Your answer...">
-                 <button class="btn btn-primary btn-sm" onclick="checkAnswer(document.getElementById('quiz-answer').value)">Submit</button>`;
+        // True/False or Short Answer
+        if (isTF) {
+            html += `
+                <button class="btn btn-outline-secondary btn-sm mr-2" onclick="checkTextAnswer('True')">✅ True</button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="checkTextAnswer('False')">❌ False</button>`;
+        } else {
+            html += `
+                <input type="text" class="form-control mb-2" id="quiz-answer" placeholder="Your answer...">
+                <button class="btn btn-primary btn-sm" onclick="checkTextAnswer(document.getElementById('quiz-answer').value)">Submit</button>`;
+        }
     }
-    html += '</div>';
+
+    html += `<div id="quiz-feedback" class="mt-3"></div></div>`;
     output.innerHTML = html;
 }
 
-function checkAnswer(userAnswer) {
+// ─── MCQ answer checker ────────────────────────────────────
+// Uses answerIndex for reliable comparison — no string matching issues
+function checkMCQ(selectedIndex) {
+    if (quizAnswered) return; // prevent double clicking
+    quizAnswered = true;
+
     const q = quizQuestions[quizIndex];
-    const output = document.getElementById('quiz-output');
-    const correct = userAnswer.trim().toLowerCase() === q.answer.trim().toLowerCase();
+    const correct = selectedIndex === q.answerIndex;
     if (correct) quizScore++;
-    output.querySelectorAll('.quiz-opt, button:not([onclick="nextQuestion()"])').forEach(b => b.disabled = true);
-    output.innerHTML += `<div class="ai-content mt-2">
-        <p>${correct ? '✅ <strong>Correct!</strong>' : `❌ <strong>Wrong.</strong> Answer: <strong>${q.answer}</strong>`}</p>
-        <p><em>${q.explanation}</em></p>
-        <button class="btn btn-primary btn-sm" onclick="nextQuestion()">Next →</button>
-    </div>`;
+
+    // Color the buttons — green for correct, red for wrong, grey for others
+    q.options.forEach((opt, i) => {
+        const btn = document.getElementById(`quiz-opt-${i}`);
+        if (!btn) return;
+        btn.disabled = true;
+        if (i === q.answerIndex) {
+            // Always highlight the correct answer green
+            btn.className = 'btn btn-success btn-sm d-block mb-2 w-100 text-left';
+        } else if (i === selectedIndex && !correct) {
+            // Highlight wrong choice red
+            btn.className = 'btn btn-danger btn-sm d-block mb-2 w-100 text-left';
+        } else {
+            btn.className = 'btn btn-outline-secondary btn-sm d-block mb-2 w-100 text-left';
+        }
+    });
+
+    // Show feedback
+    const feedback = document.getElementById('quiz-feedback');
+    feedback.innerHTML = `
+        <div class="p-2 rounded" style="background:${correct ? '#d4edda' : '#f8d7da'}; border:1px solid ${correct ? '#c3e6cb' : '#f5c6cb'}">
+            <strong>${correct ? '✅ Correct!' : `❌ Wrong — correct answer: "${q.options[q.answerIndex]}"`}</strong><br>
+            <em>${q.explanation}</em>
+        </div>
+        <button class="btn btn-primary btn-sm mt-2" onclick="nextQuestion()">
+            ${quizIndex + 1 < quizQuestions.length ? 'Next Question →' : 'See Results 🎉'}
+        </button>`;
 }
 
-function nextQuestion() { quizIndex++; showQuizQuestion(document.getElementById('quiz-output')); }
-function resetQuiz() { quizQuestions = []; quizIndex = 0; quizScore = 0; document.getElementById('quiz-output').innerHTML = ''; }
+// ─── Text/TF answer checker ───────────────────────────────
+function checkTextAnswer(userAnswer) {
+    if (quizAnswered) return;
+    quizAnswered = true;
+
+    const q = quizQuestions[quizIndex];
+    const correct = userAnswer.trim().toLowerCase() === q.answer.trim().toLowerCase();
+    if (correct) quizScore++;
+
+    // Disable any buttons
+    document.querySelectorAll('#quiz-question-block button:not([onclick="nextQuestion()"])').forEach(b => b.disabled = true);
+
+    const feedback = document.getElementById('quiz-feedback');
+    feedback.innerHTML = `
+        <div class="p-2 rounded" style="background:${correct ? '#d4edda' : '#f8d7da'}; border:1px solid ${correct ? '#c3e6cb' : '#f5c6cb'}">
+            <strong>${correct ? '✅ Correct!' : `❌ Wrong — correct answer: "${q.answer}"`}</strong><br>
+            <em>${q.explanation}</em>
+        </div>
+        <button class="btn btn-primary btn-sm mt-2" onclick="nextQuestion()">
+            ${quizIndex + 1 < quizQuestions.length ? 'Next Question →' : 'See Results 🎉'}
+        </button>`;
+}
+
+function nextQuestion() {
+    quizIndex++;
+    showQuizQuestion();
+}
+
+function resetQuiz() {
+    quizQuestions = [];
+    quizIndex = 0;
+    quizScore = 0;
+    quizAnswered = false;
+    document.getElementById('quiz-output').innerHTML = '';
+}
 
 // ═══════════════════════════════════════════════════════════
 // SYLLABUS ANALYZER
@@ -726,7 +775,6 @@ async function solvesyllabus() {
     if (!input) return;
     const output = document.getElementById('syllabus-output');
     output.innerHTML = `<div class="msg-thinking" id="thinking-syllabus">📚 <em>Building your study plan...</em></div>`;
-
     try {
         const result = await askAI('syllabus',
             `You are an expert study planner. Format your response like this:
@@ -757,7 +805,7 @@ Hours per day: ${hoursPerDay}`
         output.innerHTML = `<div class="ai-content">${renderMarkdown(result)}</div>`;
         saveToDB('Syllabus Analyzer', input.substring(0, 100), result);
     } catch (e) {
-        document.getElementById('thinking-syllabus').remove();
+        document.getElementById('thinking-syllabus')?.remove();
         output.innerHTML = `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -775,7 +823,6 @@ async function solveproject() {
     output.innerHTML += `<div class="msg-user">💬 <strong>You:</strong> ${input.substring(0, 120)}...</div>`;
     output.innerHTML += `<div class="msg-thinking" id="thinking-project">🚀 <em>Evaluating project...</em></div>`;
     document.getElementById('project-input').value = '';
-
     try {
         const result = await askAI('project',
             `You are an expert judge evaluating a student ${type} project (currently ${stage}).
@@ -810,7 +857,7 @@ ${getDBContext()}`, input
         output.scrollTop = output.scrollHeight;
         saveToDB('Project Feedback', input, result);
     } catch (e) {
-        document.getElementById('thinking-project').remove();
+        document.getElementById('thinking-project')?.remove();
         output.innerHTML += `<div class="msg-error">⚠️ Failed. Try again.</div>`;
     }
 }
@@ -904,13 +951,14 @@ function analyzedb() {
 }
 
 async function analyzeweaknesses() {
-    if (!apikey) { document.getElementById('analyze-output').innerHTML = 'Enter your API key first.'; return; }
+    if (!apikey) { document.getElementById('analyze-output').innerHTML = 'Enter your API key on the main page first.'; return; }
     const history = JSON.parse(localStorage.getItem('stemHistory') || '[]');
-    if (!history.length) { document.getElementById('analyze-output').innerHTML = 'No history yet.'; return; }
+    if (!history.length) { document.getElementById('analyze-output').innerHTML = 'No history yet. Use the tools first.'; return; }
     document.getElementById('analyze-output').innerHTML = '<em>Analysing... 🔍</em>';
     const summary = history.slice(-20).map(e => `[${e.tool}] ${e.input}`).join('\n');
-    const result = await askAI('math',
-        `You are an educational analyst. Format your response like this:
+    try {
+        const result = await askAI('math',
+            `You are an educational analyst. Format your response like this:
 
 ## 🧠 Learning Profile
 (brief summary of what subjects/topics this student has been working on)
@@ -928,9 +976,12 @@ async function analyzeweaknesses() {
 3. specific action
 
 Be encouraging and specific.`,
-        `Student history:\n${summary}`
-    );
-    document.getElementById('analyze-output').innerHTML = `<div class="ai-content">${renderMarkdown(result)}</div>`;
+            `Student history:\n${summary}`
+        );
+        document.getElementById('analyze-output').innerHTML = `<div class="ai-content">${renderMarkdown(result)}</div>`;
+    } catch (e) {
+        document.getElementById('analyze-output').innerHTML = `<div class="msg-error">⚠️ Failed. Try again.</div>`;
+    }
 }
 
 function cleardb() {
@@ -942,5 +993,5 @@ function getDBContext() {
     const history = JSON.parse(localStorage.getItem('stemHistory') || '[]');
     if (!history.length) return '';
     const summary = history.slice(-10).map(e => `[${e.tool}] ${e.input}`).join('\n');
-    return `\n\nStudent's recent learning history (personalise your response based on their level):\n${summary}`;
+    return `\n\nStudent's recent learning history (use for personalisation only — do not let this change what tool you are):\n${summary}`;
 }
